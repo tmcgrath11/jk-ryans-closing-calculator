@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JK Ryans Tip Closing Calculator</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: #f4f6f9;
+            color: #333;
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: #fff;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+        }
+        h1 {
+            text-align: center;
+            color: #1a1a1a;
+            margin-bottom: 25px;
+            font-size: 24px;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 5px;
+            color: #4a5568;
+        }
+        input[type="number"], input[type="text"], select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #cbd5e1;
+            border-radius: 6px;
+            box-sizing: border-box;
+            font-size: 16px;
+        }
+        .row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+        button {
+            width: 100%;
+            padding: 12px;
+            background-color: #3182ce;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: 15px;
+            transition: background 0.2s;
+        }
+        button:hover {
+            background-color: #2b6cb0;
+        }
+        .section-title {
+            margin-top: 20px;
+            padding-bottom: 5px;
+            border-bottom: 2px solid #e2e8f0;
+            color: #2d3748;
+        }
+        .employee-input-row {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 10px;
+            margin-bottom: 8px;
+        }
+        #results {
+            margin-top: 25px;
+            background: #f8fafc;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 4px solid #3182ce;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+        th, td {
+            text-align: left;
+            padding: 8px;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        th {
+            background-color: #edf2f7;
+        }
+        .summary-box {
+            background: #ebf8ff;
+            padding: 10px;
+            border-radius: 6px;
+            margin-bottom: 15px;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>JK Ryans Tip Calculator</h1>
+    
+    <div class="row">
+        <div class="form-group">
+            <label for="ccTips">Total Credit Card Tips ($)</label>
+            <input type="number" id="ccTips" step="0.01" placeholder="0.00" value="1106.68">
+        </div>
+        <div class="form-group">
+            <label for="cashTips">Total Cash Tips ($)</label>
+            <input type="number" id="cashTips" step="0.01" placeholder="0.00" value="631">
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="form-group">
+            <label for="numBussers">Number of Bussers</label>
+            <input type="number" id="numBussers" min="0" value="3" oninput="generateEmployeeInputs()">
+        </div>
+        <div class="form-group">
+            <label for="numServers">Number of Servers</label>
+            <input type="number" id="numServers" min="1" value="4" oninput="generateEmployeeInputs()">
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="form-group">
+            <label for="busserMethod">Busser Split Method</label>
+            <select id="busserMethod" onchange="toggleHoursDisplay()">
+                <option value="hourly">Hourly Split</option>
+                <option value="even">Even Split</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label for="serverMethod">Server Split Method</label>
+            <select id="serverMethod" onchange="toggleHoursDisplay()">
+                <option value="hourly">Hourly Split</option>
+                <option value="even">Even Split</option>
+            </select>
+        </div>
+    </div>
+
+    <h3 class="section-title">Busser Details</h3>
+    <div id="busserInputsContainer"></div>
+
+    <h3 class="section-title">Server Details</h3>
+    <div id="serverInputsContainer"></div>
+
+    <button onclick="calculateTips()">Calculate Tips</button>
+
+    <div id="results" style="display:none;">
+        <h2>Payout Results</h2>
+        <div id="breakdownSummary" class="summary-box"></div>
+        <table>
+            <thead>
+                <tr>
+                    <th>Name (Role)</th>
+                    <th>Cash Out</th>
+                    <th>CC Out</th>
+                </tr>
+            </thead>
+            <tbody id="resultsTableBody"></tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+// Default setup data mimicking your Sunday Night PDF for testing
+const defaultBussers = [
+    {name: "Name", hours: 9.5},
+    {name: "Name", hours: 6},
+    {name: "Name", hours: 5.5}
+];
+const defaultServers = [
+    {name: "Name", hours: 10.5},
+    {name: "Name", hours: 10},
+    {name: "Name", hours: 5.5},
+    {name: "Name", hours: 6.5}
+];
+
+function generateEmployeeInputs() {
+    const numBussers = parseInt(document.getElementById('numBussers').value) || 0;
+    const numServers = parseInt(document.getElementById('numServers').value) || 0;
+    
+    const busserContainer = document.getElementById('busserInputsContainer');
+    const serverContainer = document.getElementById('serverInputsContainer');
+    
+    // Build Busser Inputs
+    busserContainer.innerHTML = '';
+    for(let i = 0; i < numBussers; i++) {
+        const def = defaultBussers[i] || {name: `Busser ${i+1}`, hours: ''};
+        busserContainer.innerHTML += `
+            <div class="employee-input-row">
+                <input type="text" class="busser-name" value="${def.name}" placeholder="Name">
+                <input type="number" class="busser-hours" step="0.1" value="${def.hours}" placeholder="Hours">
+            </div>`;
+    }
+    if(numBussers === 0) busserContainer.innerHTML = '<p style="color:#718096; font-size:14px;">No bussers scheduled.</p>';
+
+    // Build Server Inputs
+    serverContainer.innerHTML = '';
+    for(let i = 0; i < numServers; i++) {
+        const def = defaultServers[i] || {name: `Server ${i+1}`, hours: ''};
+        serverContainer.innerHTML += `
+            <div class="employee-input-row">
+                <input type="text" class="server-name" value="${def.name}" placeholder="Name">
+                <input type="number" class="server-hours" step="0.1" value="${def.hours}" placeholder="Hours">
+            </div>`;
+    }
+    toggleHoursDisplay();
+}
+
+function toggleHoursDisplay() {
+    const bMethod = document.getElementById('busserMethod').value;
+    const sMethod = document.getElementById('serverMethod').value;
+    
+    document.querySelectorAll('.busser-hours').forEach(el => el.style.visibility = (bMethod === 'hourly') ? 'visible' : 'hidden');
+    document.querySelectorAll('.server-hours').forEach(el => el.style.visibility = (sMethod === 'hourly') ? 'visible' : 'hidden');
+}
+
+function calculateTips() {
+    const ccTips = parseFloat(document.getElementById('ccTips').value) || 0;
+    const cashTips = parseFloat(document.getElementById('cashTips').value) || 0;
+    const numBussers = parseInt(document.getElementById('numBussers').value) || 0;
+    const numServers = parseInt(document.getElementById('numServers').value) || 0;
+    
+    const busserMethod = document.getElementById('busserMethod').value;
+    const serverMethod = document.getElementById('serverMethod').value;
+
+    // 1. Determine Busser Tipout Percentage
+    let tipoutPct = 0;
+    if (numBussers === 1) tipoutPct = 0.10;
+    else if (numBussers === 2) tipoutPct = 0.15;
+    else if (numBussers >= 3) tipoutPct = 0.225;
+
+    const busserTotalCC = ccTips * tipoutPct;
+    const busserTotalCash = cashTips * tipoutPct;
+
+    const serverTotalCC = ccTips - busserTotalCC;
+    const serverTotalCash = cashTips - busserTotalCash;
+
+    let finalPayouts = [];
+
+    // 2. Process Bussers
+    if (numBussers > 0) {
+        const names = Array.from(document.querySelectorAll('.busser-name')).map(el => el.value || "Unnamed Busser");
+        const hours = Array.from(document.querySelectorAll('.busser-hours')).map(el => parseFloat(el.value) || 0);
+        
+        if (busserMethod === 'hourly') {
+            const totalBusserHours = hours.reduce((a, b) => a + b, 0);
+            const ccRate = totalBusserHours > 0 ? busserTotalCC / totalBusserHours : 0;
+            const cashRate = totalBusserHours > 0 ? busserTotalCash / totalBusserHours : 0;
+            
+            for(let i=0; i<numBussers; i++) {
+                finalPayouts.push({
+                    name: names[i], role: 'Busser',
+                    cash: Math.round(hours[i] * cashRate),
+                    cc: hours[i] * ccRate
+                });
+            }
+        } else { // Even Split
+            for(let i=0; i<numBussers; i++) {
+                finalPayouts.push({
+                    name: names[i], role: 'Busser',
+                    cash: Math.round(busserTotalCash / numBussers),
+                    cc: busserTotalCC / numBussers
+                });
+            }
+        }
+    }
+
+    // 3. Process Servers
+    if (numServers > 0) {
+        const names = Array.from(document.querySelectorAll('.server-name')).map(el => el.value || "Unnamed Server");
+        const hours = Array.from(document.querySelectorAll('.server-hours')).map(el => parseFloat(el.value) || 0);
+
+        if (serverMethod === 'hourly') {
+            const totalServerHours = hours.reduce((a, b) => a + b, 0);
+            const ccRate = totalServerHours > 0 ? serverTotalCC / totalServerHours : 0;
+            const cashRate = totalServerHours > 0 ? serverTotalCash / totalServerHours : 0;
+
+            for(let i=0; i<numServers; i++) {
+                finalPayouts.push({
+                    name: names[i], role: 'Server',
+                    cash: Math.round(hours[i] * cashRate),
+                    cc: hours[i] * ccRate
+                });
+            }
+        } else { // Even Split
+            for(let i=0; i<numServers; i++) {
+                finalPayouts.push({
+                    name: names[i], role: 'Server',
+                    cash: Math.round(serverTotalCash / numServers),
+                    cc: serverTotalCC / numServers
+                });
+            }
+        }
+    }
+
+    // 4. Render Output
+    document.getElementById('breakdownSummary').innerHTML = `
+        <strong>Tipout Rate:</strong> ${(tipoutPct * 100).toFixed(1)}% <br>
+        <strong>Bussers Pool:</strong> Cash: $${busserTotalCash.toFixed(2)} | CC: $${busserTotalCC.toFixed(2)}<br>
+        <strong>Servers Pool:</strong> Cash: $${serverTotalCash.toFixed(2)} | CC: $${serverTotalCC.toFixed(2)}
+    `;
+
+    const tbody = document.getElementById('resultsTableBody');
+    tbody.innerHTML = '';
+    
+    finalPayouts.forEach(p => {
+        tbody.innerHTML += `
+            <tr>
+                <td><strong>${p.name}</strong> <small style="color:gray">(${p.role})</small></td>
+                <td>$${p.cash.toFixed(0)}</td>
+                <td>$${p.cc.toFixed(2)}</td>
+            </tr>
+        `;
+    });
+
+    document.getElementById('results').style.display = 'block';
+}
+
+// Initialize on page load
+generateEmployeeInputs();
+</script>
+
+</body>
+</html>
