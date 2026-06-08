@@ -113,22 +113,22 @@
     <div class="row">
         <div class="form-group">
             <label for="ccTips">Total Credit Card Tips ($)</label>
-            <input type="number" id="ccTips" step="0.01" placeholder="0.00" value="1106.68">
+            <input type="number" id="ccTips" step="0.01" placeholder="0.00" value="0">
         </div>
         <div class="form-group">
             <label for="cashTips">Total Cash Tips ($)</label>
-            <input type="number" id="cashTips" step="0.01" placeholder="0.00" value="631">
+            <input type="number" id="cashTips" step="0.01" placeholder="0.00" value="0">
         </div>
     </div>
 
     <div class="row">
         <div class="form-group">
             <label for="numBussers">Number of Bussers</label>
-            <input type="number" id="numBussers" min="0" value="3" oninput="generateEmployeeInputs()">
+            <input type="number" id="numBussers" min="0" value="0" oninput="generateEmployeeInputs()">
         </div>
         <div class="form-group">
             <label for="numServers">Number of Servers</label>
-            <input type="number" id="numServers" min="1" value="4" oninput="generateEmployeeInputs()">
+            <input type="number" id="numServers" min="1" value="1" oninput="generateEmployeeInputs()">
         </div>
     </div>
 
@@ -174,19 +174,6 @@
 </div>
 
 <script>
-// Default setup data mimicking your Sunday Night PDF for testing
-const defaultBussers = [
-    {name: "Name", hours: 9.5},
-    {name: "Name", hours: 6},
-    {name: "Name", hours: 5.5}
-];
-const defaultServers = [
-    {name: "Name", hours: 10.5},
-    {name: "Name", hours: 10},
-    {name: "Name", hours: 5.5},
-    {name: "Name", hours: 6.5}
-];
-
 function generateEmployeeInputs() {
     const numBussers = parseInt(document.getElementById('numBussers').value) || 0;
     const numServers = parseInt(document.getElementById('numServers').value) || 0;
@@ -197,11 +184,10 @@ function generateEmployeeInputs() {
     // Build Busser Inputs
     busserContainer.innerHTML = '';
     for(let i = 0; i < numBussers; i++) {
-        const def = defaultBussers[i] || {name: `Busser ${i+1}`, hours: ''};
         busserContainer.innerHTML += `
             <div class="employee-input-row">
-                <input type="text" class="busser-name" value="${def.name}" placeholder="Name">
-                <input type="number" class="busser-hours" step="0.1" value="${def.hours}" placeholder="Hours">
+                <input type="text" class="busser-name" value="" placeholder="Busser ${i+1}">
+                <input type="number" class="busser-hours" step="0.1" value="" placeholder="Hours">
             </div>`;
     }
     if(numBussers === 0) busserContainer.innerHTML = '<p style="color:#718096; font-size:14px;">No bussers scheduled.</p>';
@@ -209,11 +195,10 @@ function generateEmployeeInputs() {
     // Build Server Inputs
     serverContainer.innerHTML = '';
     for(let i = 0; i < numServers; i++) {
-        const def = defaultServers[i] || {name: `Server ${i+1}`, hours: ''};
         serverContainer.innerHTML += `
             <div class="employee-input-row">
-                <input type="text" class="server-name" value="${def.name}" placeholder="Name">
-                <input type="number" class="server-hours" step="0.1" value="${def.hours}" placeholder="Hours">
+                <input type="text" class="server-name" value="" placeholder="Server ${i+1}">
+                <input type="number" class="server-hours" step="0.1" value="" placeholder="Hours">
             </div>`;
     }
     toggleHoursDisplay();
@@ -236,11 +221,11 @@ function calculateTips() {
     const busserMethod = document.getElementById('busserMethod').value;
     const serverMethod = document.getElementById('serverMethod').value;
 
-    // 1. Determine Busser Tipout Percentage
+    // 1. Determine Busser Tipout Percentage [cite: 18, 19, 20]
     let tipoutPct = 0;
-    if (numBussers === 1) tipoutPct = 0.10;
-    else if (numBussers === 2) tipoutPct = 0.15;
-    else if (numBussers >= 3) tipoutPct = 0.225;
+    if (numBussers === 1) tipoutPct = 0.10; // 10% [cite: 18]
+    else if (numBussers === 2) tipoutPct = 0.15; // 15% [cite: 19]
+    else if (numBussers >= 3) tipoutPct = 0.225; // 22.5% [cite: 20]
 
     const busserTotalCC = ccTips * tipoutPct;
     const busserTotalCash = cashTips * tipoutPct;
@@ -252,10 +237,10 @@ function calculateTips() {
 
     // 2. Process Bussers
     if (numBussers > 0) {
-        const names = Array.from(document.querySelectorAll('.busser-name')).map(el => el.value || "Unnamed Busser");
+        const names = Array.from(document.querySelectorAll('.busser-name')).map((el, idx) => el.value || `Busser ${idx+1}`);
         const hours = Array.from(document.querySelectorAll('.busser-hours')).map(el => parseFloat(el.value) || 0);
         
-        if (busserMethod === 'hourly') {
+        if (busserMethod === 'hourly') { // Hourly split logic [cite: 22, 23]
             const totalBusserHours = hours.reduce((a, b) => a + b, 0);
             const ccRate = totalBusserHours > 0 ? busserTotalCC / totalBusserHours : 0;
             const cashRate = totalBusserHours > 0 ? busserTotalCash / totalBusserHours : 0;
@@ -263,15 +248,15 @@ function calculateTips() {
             for(let i=0; i<numBussers; i++) {
                 finalPayouts.push({
                     name: names[i], role: 'Busser',
-                    cash: Math.round(hours[i] * cashRate),
+                    cash: Math.round(hours[i] * cashRate), // Rounded cash [cite: 80]
                     cc: hours[i] * ccRate
                 });
             }
-        } else { // Even Split
+        } else { // Even Split [cite: 21]
             for(let i=0; i<numBussers; i++) {
                 finalPayouts.push({
                     name: names[i], role: 'Busser',
-                    cash: Math.round(busserTotalCash / numBussers),
+                    cash: Math.round(busserTotalCash / numBussers), // Rounded cash [cite: 80]
                     cc: busserTotalCC / numBussers
                 });
             }
@@ -280,10 +265,10 @@ function calculateTips() {
 
     // 3. Process Servers
     if (numServers > 0) {
-        const names = Array.from(document.querySelectorAll('.server-name')).map(el => el.value || "Unnamed Server");
+        const names = Array.from(document.querySelectorAll('.server-name')).map((el, idx) => el.value || `Server ${idx+1}`);
         const hours = Array.from(document.querySelectorAll('.server-hours')).map(el => parseFloat(el.value) || 0);
 
-        if (serverMethod === 'hourly') {
+        if (serverMethod === 'hourly') { // Hourly split logic [cite: 22]
             const totalServerHours = hours.reduce((a, b) => a + b, 0);
             const ccRate = totalServerHours > 0 ? serverTotalCC / totalServerHours : 0;
             const cashRate = totalServerHours > 0 ? serverTotalCash / totalServerHours : 0;
@@ -291,15 +276,15 @@ function calculateTips() {
             for(let i=0; i<numServers; i++) {
                 finalPayouts.push({
                     name: names[i], role: 'Server',
-                    cash: Math.round(hours[i] * cashRate),
+                    cash: Math.round(hours[i] * cashRate), // Rounded cash [cite: 80]
                     cc: hours[i] * ccRate
                 });
             }
-        } else { // Even Split
+        } else { // Even Split [cite: 21]
             for(let i=0; i<numServers; i++) {
                 finalPayouts.push({
                     name: names[i], role: 'Server',
-                    cash: Math.round(serverTotalCash / numServers),
+                    cash: Math.round(serverTotalCash / numServers), // Rounded cash [cite: 80]
                     cc: serverTotalCC / numServers
                 });
             }
