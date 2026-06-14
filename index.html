@@ -221,11 +221,17 @@ function calculateTips() {
     const busserMethod = document.getElementById('busserMethod').value;
     const serverMethod = document.getElementById('serverMethod').value;
 
-    // 1. Determine Busser Tipout Percentage [cite: 18, 19, 20]
+    // 1. Determine Busser Tipout Percentage
     let tipoutPct = 0;
-    if (numBussers === 1) tipoutPct = 0.10; // 10% [cite: 18]
-    else if (numBussers === 2) tipoutPct = 0.15; // 15% [cite: 19]
-    else if (numBussers >= 3) tipoutPct = 0.225; // 22.5% [cite: 20]
+    if (numBussers === 1) {
+        tipoutPct = 0.10; // 10% 
+    } else if (numBussers === 2) {
+        tipoutPct = 0.15; // 15% 
+    } else if (numBussers === 3) {
+        tipoutPct = 0.225; // 22.5% 
+    } else if (numBussers >= 4) {
+        tipoutPct = 0.28; // 28% for 4 or more bussers
+    }
 
     const busserTotalCC = ccTips * tipoutPct;
     const busserTotalCash = cashTips * tipoutPct;
@@ -240,7 +246,7 @@ function calculateTips() {
         const names = Array.from(document.querySelectorAll('.busser-name')).map((el, idx) => el.value || `Busser ${idx+1}`);
         const hours = Array.from(document.querySelectorAll('.busser-hours')).map(el => parseFloat(el.value) || 0);
         
-        if (busserMethod === 'hourly') { // Hourly split logic [cite: 22, 23]
+        if (busserMethod === 'hourly') {
             const totalBusserHours = hours.reduce((a, b) => a + b, 0);
             const ccRate = totalBusserHours > 0 ? busserTotalCC / totalBusserHours : 0;
             const cashRate = totalBusserHours > 0 ? busserTotalCash / totalBusserHours : 0;
@@ -248,15 +254,15 @@ function calculateTips() {
             for(let i=0; i<numBussers; i++) {
                 finalPayouts.push({
                     name: names[i], role: 'Busser',
-                    cash: Math.round(hours[i] * cashRate), // Rounded cash [cite: 80]
+                    cash: Math.round(hours[i] * cashRate),
                     cc: hours[i] * ccRate
                 });
             }
-        } else { // Even Split [cite: 21]
+        } else { // Even Split
             for(let i=0; i<numBussers; i++) {
                 finalPayouts.push({
                     name: names[i], role: 'Busser',
-                    cash: Math.round(busserTotalCash / numBussers), // Rounded cash [cite: 80]
+                    cash: Math.round(busserTotalCash / numBussers),
                     cc: busserTotalCC / numBussers
                 });
             }
@@ -268,7 +274,7 @@ function calculateTips() {
         const names = Array.from(document.querySelectorAll('.server-name')).map((el, idx) => el.value || `Server ${idx+1}`);
         const hours = Array.from(document.querySelectorAll('.server-hours')).map(el => parseFloat(el.value) || 0);
 
-        if (serverMethod === 'hourly') { // Hourly split logic [cite: 22]
+        if (serverMethod === 'hourly') {
             const totalServerHours = hours.reduce((a, b) => a + b, 0);
             const ccRate = totalServerHours > 0 ? serverTotalCC / totalServerHours : 0;
             const cashRate = totalServerHours > 0 ? serverTotalCash / totalServerHours : 0;
@@ -276,15 +282,15 @@ function calculateTips() {
             for(let i=0; i<numServers; i++) {
                 finalPayouts.push({
                     name: names[i], role: 'Server',
-                    cash: Math.round(hours[i] * cashRate), // Rounded cash [cite: 80]
+                    cash: Math.round(hours[i] * cashRate),
                     cc: hours[i] * ccRate
                 });
             }
-        } else { // Even Split [cite: 21]
+        } else { // Even Split
             for(let i=0; i<numServers; i++) {
                 finalPayouts.push({
                     name: names[i], role: 'Server',
-                    cash: Math.round(serverTotalCash / numServers), // Rounded cash [cite: 80]
+                    cash: Math.round(serverTotalCash / numServers),
                     cc: serverTotalCC / numServers
                 });
             }
