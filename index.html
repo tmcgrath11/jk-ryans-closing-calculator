@@ -149,6 +149,14 @@
         </div>
     </div>
 
+    <div class="form-group" id="overrideContainer" style="display: none;">
+        <label for="maxBusserRate">Rate for 4+ Bussers</label>
+        <select id="maxBusserRate">
+            <option value="0.225">Default (22.5%)</option>
+            <option value="0.28">Premium (28%)</option>
+        </select>
+    </div>
+
     <h3 class="section-title">Busser Details</h3>
     <div id="busserInputsContainer"></div>
 
@@ -180,6 +188,14 @@ function generateEmployeeInputs() {
     
     const busserContainer = document.getElementById('busserInputsContainer');
     const serverContainer = document.getElementById('serverInputsContainer');
+    
+    // Show or hide the override rate choice based on having 4+ bussers
+    const overrideContainer = document.getElementById('overrideContainer');
+    if (numBussers >= 4) {
+        overrideContainer.style.display = 'block';
+    } else {
+        overrideContainer.style.display = 'none';
+    }
     
     // Build Busser Inputs
     busserContainer.innerHTML = '';
@@ -224,13 +240,14 @@ function calculateTips() {
     // 1. Determine Busser Tipout Percentage
     let tipoutPct = 0;
     if (numBussers === 1) {
-        tipoutPct = 0.10; // 10% 
+        tipoutPct = 0.10; // 10%
     } else if (numBussers === 2) {
-        tipoutPct = 0.15; // 15% 
+        tipoutPct = 0.15; // 15%
     } else if (numBussers === 3) {
-        tipoutPct = 0.225; // 22.5% 
+        tipoutPct = 0.225; // 22.5%
     } else if (numBussers >= 4) {
-        tipoutPct = 0.28; // 28% for 4 or more bussers
+        // Read choice selected from the manual dropdown selection
+        tipoutPct = parseFloat(document.getElementById('maxBusserRate').value) || 0.225;
     }
 
     const busserTotalCC = ccTips * tipoutPct;
